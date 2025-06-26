@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Təkmilləşdirilmiş Şəbəkə Topologiyaları Simulyatoru</title>
+    <style>
+        /* General styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .topology-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .topology-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .topology-btn.active {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        /* Simulation Area */
+        .simulation-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .topology-canvas {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Nodes and Connections */
+        .node {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            z-index: 10;
+        }
+        
+        .node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .node.active {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            animation: pulse 1.5s infinite;
+        }
+
+        .node.failed {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .node.server {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+        }
+        
+        .connection {
+            position: absolute;
+            background: #bdc3c7;
+            height: 4px;
+            border-radius: 2px;
+            transform-origin: left center;
+            z-index: 1;
+        }
+        
+        .connection.active {
+            background: #e74c3c;
+            height: 5px;
+            box-shadow: 0 0 12px rgba(231, 76, 60, 0.7);
+            transition: all 0.2s ease;
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topology-info h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .topology-info p {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .advantages, .disadvantages {
+            margin-top: 15px;
+        }
+        
+        .advantages h4 {
+            color: #27ae60;
+            margin-bottom: 8px;
+        }
+        
+        .disadvantages h4 {
+            color: #e74c3c;
+            margin-bottom: 8px;
+        }
+        
+        ul {
+            padding-left: 20px;
+            color: #7f8c8d;
+        }
+        
+        li {
+            margin-bottom: 5px;
+        }
+        
+        /* Simulation controls */
+        .simulation-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .sim-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(45deg, #27ae60, #229954);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .sim-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        /* Node Count Controls */
+        .node-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #ecf0f1;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .node-controls button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .node-controls button:hover {
+            background-color: #2980b9;
+        }
+
+        .node-controls span {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5); }
+        }
+        
+        .data-packet {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #f1c40f;
+            border: 2px solid white;
+            border-radius: 50%;
+            z-index: 15;
+            box-shadow: 0 0 10px #f1c40f;
+        }
+
+        /* Custom Notification/Alert Box */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #e74c3c;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease, top 0.4s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            visibility: visible;
+            top: 40px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .controls {
+                justify-content: center;
+            }
+            
+            .topology-btn {
+                padding: 10px 18px;
+                font-size: 13px;
+            }
+            
+            .topology-canvas {
+                height: 400px;
+            }
+            
+            .node {
+                width: 40px;
+                height: 40px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Şəbəkə Topologiyaları Simulyatoru</h1>
+            <p>Müxtəlif şəbəkə topologiyalarını öyrənin və simulyasiya edin</p>
+        </div>
+        
+        <div class="controls">
+            <button class="topology-btn active" data-topology="bus">🚌 Şin (Bus)</button>
+            <button class="topology-btn" data-topology="ring">⭕ Halqa (Ring)</button>
+            <button class="topology-btn" data-topology="star">⭐ Ulduz (Star)</button>
+            <button class="topology-btn" data-topology="mesh">🕸️ Mesh (Tor)</button>
+            <button class="topology-btn" data-topology="tree">🌳 Ağac (Tree)</button>
+            <button class="topology-btn" data-topology="hybrid">🔀 Qarışıq (Hybrid)</button>
+        </div>
+        
+        <div class="simulation-area">
+            <div class="topology-canvas" id="canvas">
+                <!-- Nodes and connections will be dynamically generated here -->
+            </div>
+            
+            <div class="simulation-controls">
+                <div>
+                    <button id="sim-transfer-btn" class="sim-btn">📡 Məlumat Ötürülməsi</button>
+                    <button id="sim-fail-btn" class="sim-btn">⚠️ Node Nasazlığı</button>
+                    <button id="sim-reset-btn" class="sim-btn">🔄 Sıfırla</button>
+                </div>
+                 <div class="node-controls" id="node-controls">
+                    <button id="decrease-nodes-btn">-</button>
+                    <span id="node-count-display">Node Sayı: 5</span>
+                    <button id="increase-nodes-btn">+</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="topology-info" id="topologyInfo">
+                <!-- Topology information will be displayed here -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification-box" class="notification"></div>
+
+    <script>
+        class NetworkTopologySimulator {
+            constructor() {
+                // DOM element references
+                this.canvas = document.getElementById('canvas');
+                this.infoPanel = document.getElementById('topologyInfo');
+                this.notificationBox = document.getElementById('notification-box');
+                this.nodeCountDisplay = document.getElementById('node-count-display');
+                this.nodeControlsContainer = document.getElementById('node-controls');
+
+                // State variables
+                this.currentTopology = 'bus';
+                this.nodes = [];
+                this.connections = [];
+                this.isSimulating = false;
+                this.failedNodes = new Set();
+                this.connectionMap = new Map();
+                
+                // Node count settings
+                this.nodeCount = 5;
+                this.minNodes = 3;
+                this.maxNodes = 10;
+
+                // Data for different topologies
+                this.topologyData = {
+                    bus: { name: 'Şin (Bus) Topologiyası', description: 'Bütün qurğular eyni kommunikasiya xəttinə (şin) bağlanır.', advantages: ['Quraşdırılması asan', 'Az kabel tələb edir'], disadvantages: ['Şin nasazlığı bütün şəbəkəni dayandırır', 'Performans node sayı artdıqca azalır'] },
+                    ring: { name: 'Halqa (Ring) Topologiyası', description: 'Hər qurğu iki qonşu qurğuya bağlanır və halqa əmələ gətirir.', advantages: ['Toqquşma yoxdur (token ilə)', 'Nasazlıqları tapmaq asandır'], disadvantages: ['Bir node nasazlığı bütün şəbəkəni pozur', 'Yenidən konfiqurasiya çətindir'] },
+                    star: { name: 'Ulduz (Star) Topologiyası', description: 'Bütün qurğular mərkəzi hub/switch-ə bağlanır.', advantages: ['Bir node nasazlığı digərlərinə təsir etmir', 'İdarəetmə asandır'], disadvantages: ['Mərkəzi hub nasazlığı bütün şəbəkəni pozur', 'Çox kabel tələb edir'] },
+                    mesh: { name: 'Mesh (Tor) Topologiyası', description: 'Hər qurğu digər qurğularla birbaşa əlaqəlidir.', advantages: ['Çox yüksək etibarlılıq', 'Bir neçə node nasazlığına davamlıdır'], disadvantages: ['Çox bahalı və mürəkkəb quraşdırma', 'Çoxlu kabel tələb edir'] },
+                    tree: { name: 'Ağac (Tree) Topologiyası', description: 'Iyerarxik struktur, star və bus topologiyalarının kombinasiyasıdır.', advantages: ['Genişləndirmək asandır', 'İyerarxik idarəetmə'], disadvantages: ['Kök node nasazlığı böyük problem yaradır', 'Kabel çəkmə mürəkkəbdir'] },
+                    hybrid: { name: 'Qarışıq (Hybrid) Topologiyası', description: 'Müxtəlif topologiyaların (bu nümunədə Ulduz və Halqa) kombinasiyasıdır.', advantages: ['Çevik və uyğunlaşabilən', 'Performans və etibarlılıq balansı'], disadvantages: ['Mürəkkəb dizayn', 'Yüksək quraşdırma xərci'] }
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.changeTopology('bus');
+                this.updateNodeCountDisplay();
+            }
+            
+            // Central function to switch topologies
+            changeTopology(topology) {
+                this.currentTopology = topology;
+                this.renderTopology(topology);
+                this.updateInfo(topology);
+                this.resetSimulation();
+                
+                const isDynamic = ['bus', 'ring', 'star', 'mesh'].includes(topology);
+                this.nodeControlsContainer.style.display = isDynamic ? 'flex' : 'none';
+            }
+
+            // Sets up all event listeners
+            setupEventListeners() {
+                document.querySelectorAll('.topology-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelector('.topology-btn.active').classList.remove('active');
+                        e.target.classList.add('active');
+                        this.changeTopology(e.target.dataset.topology);
+                    });
+                });
+                document.getElementById('sim-transfer-btn').addEventListener('click', () => this.simulateDataTransfer());
+                document.getElementById('sim-fail-btn').addEventListener('click', () => this.simulateNodeFailure());
+                document.getElementById('sim-reset-btn').addEventListener('click', () => this.resetSimulation());
+                document.getElementById('increase-nodes-btn').addEventListener('click', () => this.setNodeCount(this.nodeCount + 1));
+                document.getElementById('decrease-nodes-btn').addEventListener('click', () => this.setNodeCount(this.nodeCount - 1));
+            }
+
+            // Main rendering function
+            renderTopology(topology) {
+                this.clearCanvas();
+                const { width, height } = this.canvas.getBoundingClientRect();
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                const renderFunc = {
+                    bus: () => this.renderBusTopology(width, height),
+                    ring: () => this.renderRingTopology(centerX, centerY),
+                    star: () => this.renderStarTopology(centerX, centerY),
+                    mesh: () => this.renderMeshTopology(width, height),
+                    tree: () => this.renderTreeTopology(centerX, height),
+                    hybrid: () => this.renderHybridTopology(width, height, centerX, centerY)
+                }[topology];
+
+                if (renderFunc) renderFunc();
+                this.buildConnectionMap();
+            }
+
+            // Topology specific renderers
+            renderBusTopology(width, height) {
+                const busY = height / 2;
+                this.createConnection(50, busY, width - 50, busY, 'bus-main');
+                const nodeCount = this.nodeCount;
+                for(let i = 0; i < nodeCount; i++) {
+                    const x = 100 + i * ((width - 200) / (nodeCount - 1));
+                    const node = this.createNode(x, busY - 70, `node-${i}`, `PC${i + 1}`);
+                    this.createConnection(node.x, node.y, x, busY, `conn-${i}`);
+                }
+            }
+            
+            renderRingTopology(centerX, centerY) {
+                const radius = Math.min(centerX, centerY) * 0.7;
+                const nodeCount = this.nodeCount;
+                const angleStep = (2 * Math.PI) / nodeCount;
+                for(let i = 0; i < nodeCount; i++) {
+                    const angle = i * angleStep;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    this.createNode(x, y, `node-${i}`, `PC${i + 1}`);
+                }
+                for(let i = 0; i < nodeCount; i++) {
+                    const next = (i + 1) % nodeCount;
+                    const from = this.getNodeById(`node-${i}`);
+                    const to = this.getNodeById(`node-${next}`);
+                    this.createConnection(from.x, from.y, to.x, to.y, `conn-ring-${i}-${next}`);
+                }
+            }
+
+            renderStarTopology(centerX, centerY) {
+                const hub = this.createNode(centerX, centerY, 'hub', 'HUB', 'server');
+                const nodeCount = this.nodeCount;
+                const radius = Math.min(centerX, centerY) * 0.8;
+                for(let i = 0; i < nodeCount; i++) {
+                    const angle = i * (2 * Math.PI) / nodeCount;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    const node = this.createNode(x, y, `node-${i}`, `PC${i + 1}`);
+                    this.createConnection(hub.x, hub.y, node.x, node.y, `conn-hub-${i}`);
+                }
+            }
+
+            renderMeshTopology(width, height) {
+                const nodeCount = this.nodeCount;
+                const radius = Math.min(width, height) * 0.4;
+                const centerX = width/2;
+                const centerY = height/2;
+
+                for (let i = 0; i < nodeCount; i++) {
+                    const angle = (i / nodeCount) * 2 * Math.PI - Math.PI / 2;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    this.createNode(x, y, `node-${i}`, `PC${i+1}`);
+                }
+
+                for(let i = 0; i < nodeCount; i++) {
+                    for(let j = i + 1; j < nodeCount; j++) {
+                        const from = this.getNodeById(`node-${i}`);
+                        const to = this.getNodeById(`node-${j}`);
+                        this.createConnection(from.x, from.y, to.x, to.y, `conn-mesh-${i}-${j}`);
+                    }
+                }
+            }
+            
+            renderTreeTopology(centerX, height) {
+                const root = this.createNode(centerX, 50, 'root', 'ROOT', 'server');
+                const l1_nodes = [
+                    this.createNode(centerX - 150, 180, 'L1-0', 'SW1', 'server'),
+                    this.createNode(centerX + 150, 180, 'L1-1', 'SW2', 'server')
+                ];
+                this.createConnection(root.x, root.y, l1_nodes[0].x, l1_nodes[0].y, 'conn-root-0');
+                this.createConnection(root.x, root.y, l1_nodes[1].x, l1_nodes[1].y, 'conn-root-1');
+
+                l1_nodes.forEach((l1_node, i) => {
+                    for(let j=0; j<2; j++) {
+                        const x = l1_node.x - 50 + j * 100;
+                        const y = l1_node.y + 100;
+                        const leaf = this.createNode(x, y, `leaf-${i}-${j}`, `PC${i*2+j+1}`);
+                        this.createConnection(l1_node.x, l1_node.y, leaf.x, leaf.y, `conn-${l1_node.id}-${leaf.id}`);
+                    }
+                });
+            }
+            
+            renderHybridTopology(width, height, centerX, centerY) {
+                // Star section on the left
+                const starCenterX = centerX / 2;
+                const hub = this.createNode(starCenterX, centerY, 'hub', 'HUB', 'server');
+                const starNodeCount = 3;
+                for(let i = 0; i < starNodeCount; i++) {
+                    const angle = i * (2 * Math.PI) / starNodeCount - Math.PI/2;
+                    const x = starCenterX + 120 * Math.cos(angle);
+                    const y = centerY + 120 * Math.sin(angle);
+                    const node = this.createNode(x, y, `star-${i}`, `PC-S${i + 1}`);
+                    this.createConnection(hub.x, hub.y, node.x, node.y, `conn-star-${i}`);
+                }
+
+                // Ring section on the right
+                const ringCenterX = centerX * 1.5;
+                const ringRadius = 120;
+                const ringNodeCount = 4;
+                const ringNodes = [];
+                for(let i = 0; i < ringNodeCount; i++) {
+                    const angle = i * (2 * Math.PI) / ringNodeCount;
+                    const x = ringCenterX + ringRadius * Math.cos(angle);
+                    const y = centerY + ringRadius * Math.sin(angle);
+                    const node = this.createNode(x, y, `ring-${i}`, `PC-R${i + 1}`);
+                    ringNodes.push(node);
+                }
+                for(let i = 0; i < ringNodeCount; i++) {
+                    const next = (i + 1) % ringNodeCount;
+                    this.createConnection(ringNodes[i].x, ringNodes[i].y, ringNodes[next].x, ringNodes[next].y, `conn-ring-${i}-${next}`);
+                }
+
+                // Connect hub to the first ring node
+                const bridgeNode = this.getNodeById('ring-0');
+                this.createConnection(hub.x, hub.y, bridgeNode.x, bridgeNode.y, 'conn-inter-0');
+            }
+
+            // Helper for creating DOM elements
+            createNode(x, y, id, label, type = 'normal') {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = `node ${type}`;
+                nodeEl.id = id;
+                nodeEl.style.left = `${x - 25}px`;
+                nodeEl.style.top = `${y - 25}px`;
+                nodeEl.textContent = label;
+                
+                nodeEl.addEventListener('click', () => this.toggleNodeStatus(id));
+                this.canvas.appendChild(nodeEl);
+                const nodeObj = {id, x, y, element: nodeEl};
+                this.nodes.push(nodeObj);
+                return nodeObj;
+            }
+            
+            createConnection(x1, y1, x2, y2, id) {
+                const connEl = document.createElement('div');
+                connEl.className = 'connection';
+                connEl.id = id;
+                
+                const length = Math.hypot(x2 - x1, y2 - y1);
+                const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                
+                connEl.style.left = `${x1}px`;
+                connEl.style.top = `${y1 - 2}px`;
+                connEl.style.width = `${length}px`;
+                connEl.style.transform = `rotate(${angle}deg)`;
+                
+                this.canvas.appendChild(connEl);
+                const connObj = {id, element: connEl, from: {x:x1, y:y1}, to: {x:x2, y:y2}};
+                this.connections.push(connObj);
+                return connObj;
+            }
+
+            // Simulation logic
+            async simulateDataTransfer() {
+                if (this.isSimulating) {
+                    this.showNotification("Simulyasiya artıq işləyir.");
+                    return;
+                }
+                this.isSimulating = true;
+                this.resetHighlights();
+
+                const activeNodes = this.nodes.filter(n => !this.failedNodes.has(n.id) && !n.element.classList.contains('server'));
+                if (activeNodes.length < 2) {
+                    this.showNotification("Məlumat ötürmək üçün ən azı 2 aktiv PC olmalıdır.");
+                    this.isSimulating = false;
+                    return;
+                }
+
+                let source = activeNodes[Math.floor(Math.random() * activeNodes.length)];
+                let destination;
+                do {
+                    destination = activeNodes[Math.floor(Math.random() * activeNodes.length)];
+                } while (destination.id === source.id);
+
+                source.element.classList.add('active');
+                destination.element.classList.add('active');
+                
+                let path;
+                if (this.currentTopology === 'mesh' && activeNodes.length > 2) {
+                     path = this.findMultiHopPathForMesh(source.id, destination.id, activeNodes);
+                } else {
+                     path = this.findShortestPath(source.id, destination.id);
+                }
+
+                if (!path) {
+                    this.showNotification(`Yol tapılmadı: ${source.id} -> ${destination.id}`);
+                    this.isSimulating = false;
+                    this.resetHighlights();
+                    return;
+                }
+
+                await this.animateDataPacket(path);
+                
+                this.isSimulating = false;
+                this.resetHighlights();
+            }
+
+            simulateNodeFailure() {
+                const nonServerNodes = this.nodes.filter(n => !n.element.classList.contains('server'));
+                if (nonServerNodes.length === 0) return;
+                
+                const randomNode = nonServerNodes[Math.floor(Math.random() * nonServerNodes.length)];
+                this.toggleNodeStatus(randomNode.id);
+
+                const impact = this.getFailureImpact(randomNode.id);
+                if (impact) this.showNotification(impact, 3000);
+            }
+
+            resetSimulation() {
+                this.failedNodes.clear();
+                this.isSimulating = false;
+                this.resetHighlights();
+                document.querySelectorAll('.node.failed').forEach(n => n.classList.remove('failed'));
+                document.querySelectorAll('.data-packet').forEach(p => p.remove());
+            }
+
+            // Pathfinding and Animation
+            buildConnectionMap() {
+                this.connectionMap.clear();
+                this.nodes.forEach(node => this.connectionMap.set(node.id, []));
+
+                this.connections.forEach(conn => {
+                    const fromNode = this.nodes.find(n => n.x === conn.from.x && n.y === conn.from.y);
+                    const toNode = this.nodes.find(n => n.x === conn.to.x && n.y === conn.to.y);
+                    if (fromNode && toNode) {
+                        this.connectionMap.get(fromNode.id).push({neighborId: toNode.id, connectionId: conn.id});
+                        this.connectionMap.get(toNode.id).push({neighborId: fromNode.id, connectionId: conn.id});
+                    }
+                });
+                
+                if (this.currentTopology === 'bus') {
+                    const busNodes = this.nodes.filter(n => n.id.startsWith('node-'));
+                    for(let i=0; i < busNodes.length; i++) {
+                        for(let j=i+1; j < busNodes.length; j++) {
+                           this.connectionMap.get(busNodes[i].id).push({neighborId: busNodes[j].id, connectionId: 'bus-main'});
+                           this.connectionMap.get(busNodes[j].id).push({neighborId: busNodes[i].id, connectionId: 'bus-main'});
+                        }
+                    }
+                }
+            }
+
+            findShortestPath(startId, endId) {
+                if (this.failedNodes.has(startId) || this.failedNodes.has(endId)) return null;
+                const queue = [[startId, {nodes: [startId], connections: []}]];
+                const visited = new Set([startId]);
+
+                while (queue.length > 0) {
+                    const [currentId, path] = queue.shift();
+                    if (currentId === endId) return path;
+
+                    const neighbors = this.connectionMap.get(currentId) || [];
+                    for (const {neighborId, connectionId} of neighbors) {
+                        const node = this.getNodeById(neighborId);
+                        if (node && !visited.has(neighborId) && !this.failedNodes.has(neighborId)) {
+                            visited.add(neighborId);
+                            const newPath = {
+                                nodes: [...path.nodes, neighborId],
+                                connections: [...path.connections, connectionId]
+                            };
+                            queue.push([neighborId, newPath]);
+                        }
+                    }
+                }
+                return null;
+            }
+            
+            findMultiHopPathForMesh(startId, endId, activeNodes) {
+                const potentialIntermediate = activeNodes.filter(n => n.id !== startId && n.id !== endId);
+                if (potentialIntermediate.length === 0) {
+                    return this.findShortestPath(startId, endId);
+                }
+
+                const intermediateNode = potentialIntermediate[Math.floor(Math.random() * potentialIntermediate.length)];
+                const path1 = this.findShortestPath(startId, intermediateNode.id);
+                const path2 = this.findShortestPath(intermediateNode.id, endId);
+
+                if (path1 && path2) {
+                    return {
+                        nodes: [...path1.nodes, ...path2.nodes.slice(1)],
+                        connections: [...path1.connections, ...path2.connections]
+                    };
+                }
+                return this.findShortestPath(startId, endId); // Fallback
+            }
+
+            async animateDataPacket(path) {
+                const packet = document.createElement('div');
+                packet.className = 'data-packet';
+                this.canvas.appendChild(packet);
+                
+                if (this.currentTopology === 'bus' && path.nodes.length === 2) {
+                    const fromNode = this.getNodeById(path.nodes[0]);
+                    const toNode = this.getNodeById(path.nodes[1]);
+                    const busY = this.getConnectionById('bus-main').from.y;
+                    
+                    const fromDropConn = this.connections.find(c => c.id.startsWith('conn-') && c.from.x === fromNode.x);
+                    const toDropConn = this.connections.find(c => c.id.startsWith('conn-') && c.from.x === toNode.x);
+
+                    if(fromDropConn) fromDropConn.element.classList.add('active');
+                    await this.animateSingleSegment(packet, fromNode, {x: fromNode.x, y: busY}, 400);
+                    if(fromDropConn) fromDropConn.element.classList.remove('active');
+                    
+                    this.getConnectionById('bus-main').element.classList.add('active');
+                    await this.animateSingleSegment(packet, {x: fromNode.x, y: busY}, {x: toNode.x, y: busY}, 800);
+                    this.getConnectionById('bus-main').element.classList.remove('active');
+
+                    if(toDropConn) toDropConn.element.classList.add('active');
+                    await this.animateSingleSegment(packet, {x: toNode.x, y: busY}, toNode, 400);
+                    if(toDropConn) toDropConn.element.classList.remove('active');
+
+                } else {
+                    for (let i = 0; i < path.nodes.length - 1; i++) {
+                        const fromNode = this.getNodeById(path.nodes[i]);
+                        const toNode = this.getNodeById(path.nodes[i+1]);
+                        const connection = this.getConnectionById(path.connections[i]);
+                
+                        if (connection) connection.element.classList.add('active');
+                        await this.animateSingleSegment(packet, fromNode, toNode, 800);
+                        if (connection) connection.element.classList.remove('active');
+                    }
+                }
+                packet.remove();
+            }
+
+            animateSingleSegment(packet, from, to, duration) {
+                return new Promise(resolve => {
+                    const animation = packet.animate([
+                        { transform: `translate(${from.x - 6}px, ${from.y - 6}px)` },
+                        { transform: `translate(${to.x - 6}px, ${to.y - 6}px)` }
+                    ], { duration, easing: 'linear' });
+                    animation.onfinish = resolve;
+                });
+            }
+
+            // UI and State Management
+            setNodeCount(newCount) {
+                const clampedCount = Math.max(this.minNodes, Math.min(newCount, this.maxNodes));
+                if (clampedCount !== this.nodeCount) {
+                    this.nodeCount = clampedCount;
+                    this.updateNodeCountDisplay();
+                    this.changeTopology(this.currentTopology);
+                }
+            }
+
+            updateNodeCountDisplay() {
+                this.nodeCountDisplay.textContent = `Node Sayı: ${this.nodeCount}`;
+            }
+
+            toggleNodeStatus(nodeId) {
+                if (this.isSimulating) return;
+                const node = this.getNodeById(nodeId);
+                if (!node || node.element.classList.contains('server')) return;
+
+                if (this.failedNodes.has(nodeId)) {
+                    this.failedNodes.delete(nodeId);
+                    node.element.classList.remove('failed');
+                } else {
+                    this.failedNodes.add(nodeId);
+                    node.element.classList.add('failed');
+                }
+                this.buildConnectionMap();
+            }
+            
+            updateInfo(topology) {
+                const info = this.topologyData[topology];
+                this.infoPanel.innerHTML = `
+                    <h3>${info.name}</h3>
+                    <p>${info.description}</p>
+                    <div class="advantages"><h4>✅ Üstünlükləri:</h4><ul>${info.advantages.map(adv => `<li>${adv}</li>`).join('')}</ul></div>
+                    <div class="disadvantages"><h4>❌ Dezavantajları:</h4><ul>${info.disadvantages.map(dis => `<li>${dis}</li>`).join('')}</ul></div>
+                `;
+            }
+
+            clearCanvas() {
+                this.canvas.innerHTML = '';
+                this.nodes = [];
+                this.connections = [];
+            }
+
+            resetHighlights() {
+                this.nodes.forEach(n => n.element.classList.remove('active'));
+                this.connections.forEach(c => c.element.classList.remove('active'));
+            }
+
+            showNotification(message, duration = 2500) {
+                this.notificationBox.textContent = message;
+                this.notificationBox.classList.add('show');
+                setTimeout(() => {
+                    this.notificationBox.classList.remove('show');
+                }, duration);
+            }
+            
+            getFailureImpact(nodeId) {
+                switch(this.currentTopology) {
+                    case 'bus': return 'Şin topologiyasında bir node-un sıradan çıxması yalnız həmin node-a təsir edir.';
+                    case 'ring': return 'Halqa qırıldı! Şəbəkədə məlumat ötürülməsi dayandı.';
+                    case 'star': return nodeId.startsWith('hub') ? 'Mərkəzi HUB sıradan çıxdı! Bütün şəbəkə dayandı.' : 'Yalnız bir qurğu əlaqəsini itirdi.';
+                    case 'mesh': return 'Problem deyil. Mesh topologiyasında alternativ yollar mövcuddur.';
+                    case 'tree': return nodeId === 'root' ? 'Kök node sıradan çıxdı! Bütün şəbəkə iflic oldu.' : 'Ağacın bir budağı və ya yarpağı sıradan çıxdı.';
+                    case 'hybrid': return nodeId.startsWith('hub') ? 'Ulduz şəbəkəsinin HUB-ı sıradan çıxdı! Ulduzdakı PC-lər təsirləndi.' : 'Təsir nasaz olan node-un yerləşdiyi seqmentdən asılıdır.';
+                    default: return 'Node nasazlığı baş verdi.';
+                }
+            }
+
+            // Utility functions
+            getNodeById(id) { return this.nodes.find(n => n.id === id); }
+            getConnectionById(id) { return this.connections.find(c => c.id === id); }
+        }
+        
+        let simulator;
+        document.addEventListener('DOMContentLoaded', () => {
+            simulator = new NetworkTopologySimulator();
+        });
+    </script>
+</body>
+</html>

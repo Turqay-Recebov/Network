@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şəbəkə Növləri Simulatoru</title>
+    <!-- Font Awesome Kitabxanası -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .network-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .network-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .network-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .network-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .network-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .network-btn:hover::before {
+            left: 100%;
+        }
+        
+        .lan { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; }
+        .wlan { background: linear-gradient(135deg, #4ecdc4, #44a08d); color: white; }
+        .vlan { background: linear-gradient(135deg, #45b7d1, #96ceb4); color: white; }
+        .pan { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .man { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+        .wan { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
+        .can { background: linear-gradient(135deg, #fa709a, #fee140); color: white; }
+        .dan { background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; }
+        .san { background: linear-gradient(135deg, #ff9a9e, #fecfef); color: #333; }
+        .gan { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        
+        .main-content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .visualization {
+            flex: 2;
+            padding: 30px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-panel {
+            flex: 1;
+            padding: 30px;
+            background: #f8f9fa;
+            border-left: 2px solid #e9ecef;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+        
+        .network-canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: #2c2c2c;
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .device {
+            position: absolute;
+            width: 60px; /* İkonlar üçün ölçü artırıldı */
+            height: 60px;/* İkonlar üçün ölçü artırıldı */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px; /* İkon ölçüsü */
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 5;
+        }
+        
+        .device:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+                
+        .connection {
+            position: absolute;
+            height: 4px;
+            background: #bdc3c7;
+            border-radius: 2px;
+            opacity: 0.8;
+            z-index: 1;
+        }
+
+        .connection.animated {
+            background: linear-gradient(90deg, #3498db, #2ecc71, #3498db);
+            background-size: 200% 100%;
+            animation: connectionFlow 3s linear infinite;
+        }
+        
+        @keyframes connectionFlow {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-section p, .info-section li {
+            line-height: 1.6;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .info-section ul {
+            padding-left: 20px;
+        }
+        
+        .specs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .specs-table th,
+        .specs-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .specs-table th {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .specs-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+                
+        .simulation-controls {
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .sim-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sim-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .sim-btn:not(:disabled):hover {
+            background: linear-gradient(135deg, #2980b9, #1f4e79);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sim-btn:active {
+            transform: translateY(0);
+        }
+        
+        .sim-btn.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .topology-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topology-info h3 {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        .data-packet {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #f1c40f, #f39c12);
+            border-radius: 50%;
+            z-index: 3;
+            box-shadow: 0 0 15px #f1c40f, 0 0 30px #f1c40f;
+            transition: all 0.1s linear;
+        }
+        
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .pros, .cons {
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+        
+        .pros {
+            background: #d4edda;
+            border-color: #27ae60;
+            color: #155724;
+        }
+        
+        .cons {
+            background: #f8d7da;
+            border-color: #e74c3c;
+            color: #721c24;
+        }
+        
+        .device-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px; /* İzah üçün ölçü artırıldı */
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transform: translateX(-50%);
+            white-space: nowrap; /* Tooltip mətninin qırılmasını əngəlləyir */
+        }
+        
+        .device-tooltip.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .info-panel {
+                border-left: none;
+                border-top: 2px solid #e9ecef;
+                max-height: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2em; }
+            .container { margin: 10px; border-radius: 15px; padding: 0; }
+            .controls, .visualization, .info-panel { padding: 20px; }
+            .network-buttons { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+        }
+        
+        @media (max-width: 480px) {
+            .network-buttons { grid-template-columns: 1fr 1fr; }
+            .device { width: 50px; height: 50px; font-size: 20px; }
+            .network-canvas { min-height: 400px; }
+            .pros-cons { grid-template-columns: 1fr; }
+            .header, .controls, .visualization, .info-panel { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>� Şəbəkə Növləri Simulatoru</h1>
+            <p>Bütün kompüter şəbəkələrinin interaktiv simulasiyası və təhlili</p>
+        </header>
+        
+        <div class="controls">
+            <div class="network-buttons">
+                <button class="network-btn lan" data-network="LAN"><span><i class="fa-solid fa-network-wired"></i></span> LAN</button>
+                <button class="network-btn wlan" data-network="WLAN"><span><i class="fa-solid fa-wifi"></i></span> WLAN</button>
+                <button class="network-btn vlan" data-network="VLAN"><span><i class="fa-solid fa-layer-group"></i></span> VLAN</button>
+                <button class="network-btn pan" data-network="PAN"><span><i class="fa-solid fa-bluetooth-b"></i></span> PAN</button>
+                <button class="network-btn man" data-network="MAN"><span><i class="fa-solid fa-city"></i></span> MAN</button>
+                <button class="network-btn wan" data-network="WAN"><span><i class="fa-solid fa-globe"></i></span> WAN</button>
+                <button class="network-btn can" data-network="CAN"><span><i class="fa-solid fa-school"></i></span> CAN</button>
+                <button class="network-btn dan" data-network="DAN"><span><i class="fa-solid fa-desktop"></i></span> DAN</button>
+                <button class="network-btn san" data-network="SAN"><span><i class="fa-solid fa-database"></i></span> SAN</button>
+                <button class="network-btn gan" data-network="GAN"><span><i class="fa-solid fa-satellite"></i></span> GAN</button>
+            </div>
+            
+            <div class="simulation-controls">
+                <button class="sim-btn" id="startBtn" disabled><span>▶️</span> Məlumat Ötürməsini Başlat</button>
+                <button class="sim-btn" id="stopBtn" disabled><span>⏹️</span> Dayandır</button>
+                <button class="sim-btn" id="resetBtn" disabled><span>🔄</span> Sıfırla</button>
+            </div>
+        </div>
+        
+        <main class="main-content">
+            <div class="visualization">
+                <div class="network-canvas" id="networkCanvas"></div>
+            </div>
+            
+            <aside class="info-panel" id="infoPanel">
+                <div class="topology-info">
+                    <h3 id="networkTitle">🔍 Şəbəkə Növü Seçin</h3>
+                    <p id="networkDescription">Yuxarıdakı düymələrdən birini seçərək şəbəkə simulasiyasını başladın.</p>
+                </div>
+                
+                <div class="info-section">
+                    <h3>📋 Texniki Xüsusiyyətlər</h3>
+                    <table class="specs-table" id="specsTable">
+                        <thead>
+                            <tr><th>Parametr</th><th>Dəyər</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="2" style="text-align: center; color: #666;">Şəbəkə növü seçin</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info-section">
+                    <h3>🎯 Tətbiq Sahələri</h3>
+                    <ul id="applicationsList">
+                        <li>Şəbəkə növü seçin</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h3>⚖️ Üstünlüklər və Çatışmazlıqlar</h3>
+                    <div class="pros-cons" id="prosConsList">
+                        <div class="pros">
+                            <strong>✅ Üstünlüklər</strong>
+                            <p>Şəbəkə seçin</p>
+                        </div>
+                        <div class="cons">
+                            <strong>❌ Çatışmazlıqlar</strong>
+                            <p>Şəbəkə seçin</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+    
+    <div class="device-tooltip" id="deviceTooltip"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const networkCanvas = document.getElementById('networkCanvas');
+        const networkTitle = document.getElementById('networkTitle');
+        const networkDescription = document.getElementById('networkDescription');
+        const specsTable = document.getElementById('specsTable').getElementsByTagName('tbody')[0];
+        const applicationsList = document.getElementById('applicationsList');
+        const prosConsList = document.getElementById('prosConsList');
+        const deviceTooltip = document.getElementById('deviceTooltip');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let activeNetwork = null;
+        let animationInterval = null;
+
+        // --- Şəbəkə Konfiqurasiyaları (İkonlar və tam adlarla) ---
+        const networkConfigs = {
+            LAN: {
+                title: "LAN - Local Area Network",
+                description: "Məhdud coğrafi ərazidə (ofis, ev) kompüterləri birləşdirən yerli şəbəkə.",
+                devices: [
+                    { x: 280, y: 180, icon: "fa-solid fa-server", fullName: "Switch", color: "#e74c3c", name: "Switch" },
+                    { x: 120, y: 80, icon: "fa-solid fa-desktop", fullName: "Personal Computer", color: "#3498db", name: "İş Kompüteri" },
+                    { x: 440, y: 80, icon: "fa-solid fa-laptop", fullName: "Laptop", color: "#3498db", name: "Noutbuk" },
+                    { x: 120, y: 280, icon: "fa-solid fa-print", fullName: "Network Printer", color: "#f39c12", name: "Şəbəkə Printeri" },
+                    { x: 440, y: 280, icon: "fa-solid fa-database", fullName: "File Server", color: "#9b59b6", name: "Fayl Serveri" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Məsafə": "100m - 1km", "Sürət": "10 Mbps - 10 Gbps", "Topologiya": "Star, Bus", "Protokol": "Ethernet" },
+                applications: ["Ofis şəbəkələri", "Ev şəbəkələri", "Fayl və printer paylaşımı", "Oyun şəbəkələri"],
+                pros: "Yüksək sürət, aşağı gecikmə, yüksək təhlükəsizlik.",
+                cons: "Məhdud coğrafi əhatə, kabelləmə xərcləri."
+            },
+            WLAN: {
+                title: "WLAN - Wireless Local Area Network",
+                description: "Radio dalğaları ilə simsiz əlaqə quran yerli şəbəkə.",
+                devices: [
+                    { x: 280, y: 150, icon: "fa-solid fa-wifi", fullName: "Access Point", color: "#2ecc71", name: "Access Point" },
+                    { x: 120, y: 80, icon: "fa-solid fa-laptop", fullName: "Laptop", color: "#3498db", name: "Noutbuk" },
+                    { x: 440, y: 80, icon: "fa-solid fa-mobile-screen-button", fullName: "Smartphone", color: "#e67e22", name: "Ağıllı Telefon" },
+                    { x: 180, y: 280, icon: "fa-solid fa-tablet-screen-button", fullName: "Tablet", color: "#9b59b6", name: "Tablet" },
+                    { x: 380, y: 280, icon: "fa-solid fa-desktop", fullName: "Desktop PC", color: "#34495e", name: "Desktop PC" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Məsafə": "30m - 100m", "Sürət": "11 Mbps - 7 Gbps", "Standart": "Wi-Fi (802.11)", "Təhlükəsizlik": "WPA2/WPA3" },
+                applications: ["Mobil cihazların internetə çıxışı", "İctimai Wi-Fi zonaları", "Ev simsiz şəbəkələri", "IoT cihazları"],
+                pros: "Mobillik, asan quraşdırılma, kabel tələb etmir.",
+                cons: "İnterferensiya, daha aşağı sürət və təhlükəsizlik riskləri."
+            },
+            VLAN: {
+                title: "VLAN - Virtual Local Area Network",
+                description: "Fiziki şəbəkəni məntiqi seqmentlərə ayıran virtual şəbəkə.",
+                devices: [
+                    { x: 280, y: 180, icon: "fa-solid fa-server", fullName: "Managed Switch", color: "#f39c12", name: "İdarəolunan Switch" },
+                    { x: 120, y: 80, icon: "fa-solid fa-desktop", fullName: "Accounting PC", color: "#3498db", name: "Mühasibat PC" },
+                    { x: 180, y: 280, icon: "fa-solid fa-desktop", fullName: "Accounting PC 2", color: "#3498db", name: "Mühasibat PC 2" },
+                    { x: 440, y: 80, icon: "fa-solid fa-desktop", fullName: "Sales PC", color: "#e74c3c", name: "Satış PC" },
+                    { x: 380, y: 280, icon: "fa-solid fa-desktop", fullName: "Sales PC 2", color: "#e74c3c", name: "Satış PC 2" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "VLAN ID": "1-4094", "Protokol": "802.1Q", "Seqmentasiya": "Layer 2", "Routing": "Inter-VLAN" },
+                applications: ["Şöbələr arası şəbəkə ayrılması", "Təhlükəsizlik zonaları yaratmaq", "Broadcast trafikini azaltmaq"],
+                pros: "Təhlükəsizlik, çeviklik, performans artımı.",
+                cons: "Mürəkkəb konfiqurasiya, Inter-VLAN router tələbi."
+            },
+             PAN: {
+                title: "PAN - Personal Area Network",
+                description: "Şəxsi istifadə üçün çox qısa məsafəli cihazlar arası şəbəkə.",
+                devices: [
+                    { x: 280, y: 180, icon: "fa-solid fa-mobile-screen-button", fullName: "Smartphone", color: "#e67e22", name: "Telefon" },
+                    { x: 180, y: 120, icon: "fa-solid fa-headphones", fullName: "Bluetooth Headset", color: "#9b59b6", name: "Qulaqlıq" },
+                    { x: 380, y: 120, icon: "fa-regular fa-clock", fullName: "Smart Watch", color: "#2ecc71", name: "Smart Saat" },
+                    { x: 280, y: 280, icon: "fa-solid fa-laptop", fullName: "Laptop", color: "#3498db", name: "Noutbuk" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 } ],
+                specs: { "Məsafə": "1m - 10m", "Texnologiya": "Bluetooth, IrDA, NFC", "Sürət": "1-24 Mbps" },
+                applications: ["Simsiz qulaqlıqlar", "Fitnes trekerlər", "Fayl transferi", "Portativ cihazlar"],
+                pros: "Çox kiçik, rahat, aşağı enerji sərfiyyatı.",
+                cons: "Çox qısa məsafə, aşağı sürət."
+            },
+            MAN: {
+                title: "MAN - Metropolitan Area Network",
+                description: "Bir şəhəri və ya böyük bir kampusu əhatə edən şəbəkə.",
+                devices: [
+                    { x: 280, y: 250, icon: "fa-solid fa-network-wired", fullName: "Central Hub", color: "#16a085", name: "Mərkəzi Qovşaq" },
+                    { x: 100, y: 100, icon: "fa-solid fa-building", fullName: "Office Building", color: "#c0392b", name: "Ofis Binası" },
+                    { x: 460, y: 100, icon: "fa-solid fa-school", fullName: "University", color: "#2980b9", name: "Universitet" },
+                    { x: 100, y: 400, icon: "fa-solid fa-landmark", fullName: "Government Building", color: "#8e44ad", name: "Hökumət Binası" },
+                    { x: 460, y: 400, icon: "fa-solid fa-hospital", fullName: "Hospital", color: "#d35400", name: "Xəstəxana" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Məsafə": "5km - 50km", "Texnologiya": "Fiber Optik, Metro Ethernet", "Sürət": "10 Mbps - 100 Gbps" },
+                applications: ["Şəhər daxili internet provayderlər", "Böyük şirkətlərin filialları arası əlaqə", "Kabel TV"],
+                pros: "LAN-dan böyük, WAN-dan sürətli, yüksək bant genişliyi.",
+                cons: "Bahalı, mürəkkəb idarəetmə."
+            },
+            WAN: {
+                title: "WAN - Wide Area Network",
+                description: "Geniş coğrafi ərazini (ölkə, qitə) əhatə edən şəbəkə. İnternet ən böyük WAN-dır.",
+                devices: [
+                    { x: 80, y: 150, icon: "fa-solid fa-city", fullName: "City A", color: "#27ae60", name: "Bakı" },
+                    { x: 280, y: 100, icon: "fa-solid fa-city", fullName: "City B", color: "#c0392b", name: "Ankara" },
+                    { x: 480, y: 150, icon: "fa-solid fa-city", fullName: "City C", color: "#f39c12", name: "Berlin" },
+                    { x: 280, y: 350, icon: "fa-solid fa-satellite", fullName: "Satellite", color: "#2980b9", name: "Peyk" },
+                    { x: 80, y: 250, icon: "fa-solid fa-route", fullName: "Router", color: "#8e44ad", name: "Router" },
+                    { x: 480, y: 250, icon: "fa-solid fa-route", fullName: "Router", color: "#8e44ad", name: "Router" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 0, to: 3 }, { from: 2, to: 3 }, {from: 0, to: 4}, {from: 2, to: 5} ],
+                specs: { "Məsafə": "Limitsiz", "Texnologiya": "Leased Lines, MPLS, Satellite", "Sürət": "Dəyişkən (Kbps - Tbps)" },
+                applications: ["İnternet", "Beynəlxalq şirkət şəbəkələri", "Bankomat şəbəkələri", "Bulud xidmətləri"],
+                pros: "Geniş coğrafi əhatə, resursların mərkəzləşdirilməsi.",
+                cons: "Aşağı sürət, yüksək gecikmə, təhlükəsizlik riskləri."
+            },
+            CAN: {
+                title: "CAN - Campus Area Network",
+                description: "Bir-birinə yaxın binalar qrupunu (universitet, sənaye zonası) birləşdirən şəbəkə.",
+                devices: [
+                    { x: 280, y: 200, icon: "fa-solid fa-diagram-project", fullName: "Core Switch", color: "#f1c40f", name: "Mərkəzi Switch" },
+                    { x: 280, y: 80, icon: "fa-solid fa-book-open", fullName: "Library", color: "#e74c3c", name: "Kitabxana" },
+                    { x: 120, y: 200, icon: "fa-solid fa-flask", fullName: "Engineering Dept.", color: "#3498db", name: "Mühəndislik Fak." },
+                    { x: 440, y: 200, icon: "fa-solid fa-building-columns", fullName: "Economics Dept.", color: "#9b59b6", name: "İqtisadiyyat Fak." },
+                    { x: 280, y: 320, icon: "fa-solid fa-hotel", fullName: "Dormitory", color: "#2ecc71", name: "Yataqxana" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Məsafə": "1km - 5km", "Topologiya": "Star, Mesh", "Mədium": "Fiber Optik, Ethernet" },
+                applications: ["Universitet kampusları", "Böyük xəstəxanalar", "Sənaye parkları", "Hərbi bazalar"],
+                pros: "Yüksək sürət, asan idarəetmə, resurs paylaşımı.",
+                cons: "LAN-dan bahalı, məhdud ərazi."
+            },
+            DAN: {
+                title: "DAN - Desk Area Network",
+                description: "Yüksək sürət tələb edən cihazları bir masaüstü kompüterə bağlayan şəbəkə.",
+                devices: [
+                    { x: 280, y: 180, icon: "fa-solid fa-microchip", fullName: "Central Processing Unit", color: "#34495e", name: "CPU" },
+                    { x: 150, y: 80, icon: "fa-solid fa-memory", fullName: "Random Access Memory", color: "#1abc9c", name: "RAM" },
+                    { x: 410, y: 80, icon: "fa-solid fa-gamepad", fullName: "Graphics Processing Unit", color: "#2ecc71", name: "GPU" },
+                    { x: 150, y: 280, icon: "fa-solid fa-hard-drive", fullName: "Solid State Drive", color: "#f1c40f", name: "SSD" },
+                    { x: 410, y: 280, icon: "fa-solid fa-ethernet", fullName: "Network Interface Card", color: "#e67e22", name: "Şəbəkə Kartı" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Məsafə": "< 1m", "Texnologiya": "PCIe, NVLink", "Sürət": "Çox yüksək (100+ Gbps)" },
+                applications: ["Yüksək performanslı hesablama", "Qrafik stansiyalar", "Real-time video emalı"],
+                pros: "İnanılmaz sürət, çox aşağı gecikmə.",
+                cons: "Çox məhdud məsafə, spesifik tətbiqlər."
+            },
+            SAN: {
+                title: "SAN - Storage Area Network",
+                description: "Serverlərə blok səviyyəsində storage təqdim edən xüsusi şəbəkə.",
+                devices: [
+                    { x: 280, y: 150, icon: "fa-solid fa-server", fullName: "Fibre Channel Switch", color: "#c0392b", name: "FC Switch" },
+                    { x: 120, y: 80, icon: "fa-solid fa-server", fullName: "Application Server 1", color: "#2980b9", name: "Server 1" },
+                    { x: 440, y: 80, icon: "fa-solid fa-server", fullName: "Application Server 2", color: "#2980b9", name: "Server 2" },
+                    { x: 180, y: 300, icon: "fa-solid fa-database", fullName: "Disk Array", color: "#8e44ad", name: "Disk Massivi" },
+                    { x: 380, y: 300, icon: "fa-solid fa-tape", fullName: "Tape Library", color: "#7f8c8d", name: "Lent Kitabxanası" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 0, to: 3 }, { from: 0, to: 4 } ],
+                specs: { "Texnologiya": "Fibre Channel, iSCSI", "Sürət": "16 Gbps - 128 Gbps", "Access": "Blok səviyyəsi" },
+                applications: ["Verilənlər bazaları", "Virtualizasiya mühitləri", "Backup və arxivləşdirmə"],
+                pros: "Yüksək performans, etibarlılıq, mərkəzləşdirilmiş storage.",
+                cons: "Yüksək qiymət, mürəkkəb quraşdırma və idarəetmə."
+            },
+            GAN: {
+                title: "GAN - Global Area Network",
+                description: "Mobil rabitəni peyklər vasitəsilə təmin edən qlobal şəbəkə.",
+                devices: [
+                    { x: 280, y: 100, icon: "fa-solid fa-satellite", fullName: "LEO Satellite 1", color: "#2980b9", name: "Peyk 1" },
+                    { x: 100, y: 200, icon: "fa-solid fa-satellite", fullName: "LEO Satellite 2", color: "#27ae60", name: "Peyk 2" },
+                    { x: 460, y: 200, icon: "fa-solid fa-satellite", fullName: "LEO Satellite 3", color: "#27ae60", name: "Peyk 3" },
+                    { x: 280, y: 350, icon: "fa-solid fa-satellite-dish", fullName: "Ground Station", color: "#d35400", name: "Yer Stansiyası" },
+                    { x: 50, y: 400, icon: "fa-solid fa-user", fullName: "Mobile User", color: "#e67e22", name: "Mobil İstifadəçi" },
+                    { x: 510, y: 400, icon: "fa-solid fa-user", fullName: "Mobile User", color: "#e67e22", name: "Mobil İstifadəçi" }
+                ],
+                connections: [ { from: 0, to: 1 }, { from: 0, to: 2 }, { from: 1, to: 3 }, { from: 2, to: 3 }, { from: 3, to: 4 }, { from: 3, to: 5 } ],
+                specs: { "Əhatə": "Qlobal", "Texnologiya": "Peyk rabitəsi", "Gecikmə": "Yüksək (250-500 ms)" },
+                applications: ["Ucqar ərazilərdə internet", "Beynəlxalq gəmiçilik və aviasiya", "Fövqəladə hallar üçün rabitə"],
+                pros: "Hər yerdə əlçatanlıq.",
+                cons: "Çox bahalı, yüksək gecikmə, hava şəraitindən asılılıq."
+            }
+        };
+
+        function displayNetwork(networkType) {
+            stopSimulation();
+            activeNetwork = networkConfigs[networkType];
+            if (!activeNetwork) return;
+
+            networkCanvas.innerHTML = '';
+            activeNetwork.devices.forEach(device => drawDevice(device));
+            activeNetwork.connections.forEach(conn => drawConnection(conn, activeNetwork.devices));
+            updateInfoPanel(activeNetwork);
+
+            [startBtn, stopBtn, resetBtn].forEach(btn => btn.disabled = false);
+            document.querySelectorAll('.network-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.network === networkType);
+            });
+        }
+
+        function drawDevice(device) {
+            const deviceEl = document.createElement('div');
+            deviceEl.className = 'device';
+            deviceEl.innerHTML = `<i class="${device.icon}"></i>`; // İkonu əlavə et
+            deviceEl.style.left = `calc(${device.x / 560 * 100}% - 30px)`;
+            deviceEl.style.top = `calc(${device.y / 500 * 100}% - 30px)`;
+            deviceEl.style.background = device.color;
+            deviceEl.dataset.name = device.name;
+            deviceEl.dataset.fullName = device.fullName; // Tam adı data-attributuna əlavə et
+            networkCanvas.appendChild(deviceEl);
+
+            deviceEl.addEventListener('mouseenter', showTooltip);
+            deviceEl.addEventListener('mouseleave', hideTooltip);
+        }
+
+        function drawConnection(conn, devices) {
+            const fromDevice = devices[conn.from];
+            const toDevice = devices[conn.to];
+            const fromX = fromDevice.x;
+            const fromY = fromDevice.y;
+            const toX = toDevice.x;
+            const toY = toDevice.y;
+
+            const length = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+            const angle = Math.atan2(toY - fromY, toX - fromX) * 180 / Math.PI;
+
+            const connectionEl = document.createElement('div');
+            connectionEl.className = 'connection';
+            connectionEl.style.width = `${length}px`;
+            connectionEl.style.left = `calc(${fromX / 560 * 100}%)`;
+            connectionEl.style.top = `calc(${fromY / 500 * 100}%)`;
+            connectionEl.style.transformOrigin = '0 0';
+            connectionEl.style.transform = `rotate(${angle}deg)`;
+            networkCanvas.appendChild(connectionEl);
+        }
+
+        function updateInfoPanel(config) {
+            networkTitle.innerHTML = `🔍 ${config.title}`;
+            networkDescription.textContent = config.description;
+
+            specsTable.innerHTML = '';
+            for (const key in config.specs) {
+                const row = specsTable.insertRow();
+                row.innerHTML = `<td>${key}</td><td>${config.specs[key]}</td>`;
+            }
+
+            applicationsList.innerHTML = '';
+            config.applications.forEach(app => {
+                const li = document.createElement('li');
+                li.textContent = app;
+                applicationsList.appendChild(li);
+            });
+
+            prosConsList.innerHTML = `
+                <div class="pros">
+                    <strong>✅ Üstünlüklər</strong>
+                    <p>${config.pros}</p>
+                </div>
+                <div class="cons">
+                    <strong>❌ Çatışmazlıqlar</strong>
+                    <p>${config.cons}</p>
+                </div>`;
+        }
+
+        function startSimulation() {
+            if (animationInterval || !activeNetwork) return;
+            stopSimulation(); 
+            document.querySelectorAll('.connection').forEach(c => c.classList.add('animated'));
+            startBtn.classList.add('active');
+            stopBtn.classList.remove('active');
+        }
+        
+        function stopSimulation() {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            document.querySelectorAll('.connection').forEach(c => c.classList.remove('animated'));
+            startBtn.classList.remove('active');
+            stopBtn.classList.add('active');
+        }
+
+        function showTooltip(e) {
+            const deviceEl = e.target.closest('.device');
+            // İndi həm adı, həm də tam adı göstər
+            deviceTooltip.textContent = `${deviceEl.dataset.name} (${deviceEl.dataset.fullName})`;
+            deviceTooltip.classList.add('show');
+            
+            const canvasRect = networkCanvas.getBoundingClientRect();
+            const deviceRect = deviceEl.getBoundingClientRect();
+
+            let top = deviceRect.top - canvasRect.top - deviceTooltip.offsetHeight - 10;
+            let left = deviceRect.left - canvasRect.left + deviceRect.width / 2;
+
+            deviceTooltip.style.top = `${top}px`;
+            deviceTooltip.style.left = `${left}px`;
+        }
+        
+        function hideTooltip() {
+            deviceTooltip.classList.remove('show');
+        }
+
+        document.querySelector('.network-buttons').addEventListener('click', (e) => {
+            if (e.target.closest('.network-btn')) {
+                const networkType = e.target.closest('.network-btn').dataset.network;
+                displayNetwork(networkType);
+            }
+        });
+
+        startBtn.addEventListener('click', startSimulation);
+        stopBtn.addEventListener('click', stopSimulation);
+        resetBtn.addEventListener('click', () => {
+            if (activeNetwork) {
+                 const currentNetworkType = document.querySelector('.network-btn.active').dataset.network;
+                 displayNetwork(currentNetworkType);
+            }
+        });
+
+        displayNetwork('LAN');
+    });
+    </script>
+</body>
+</html>
